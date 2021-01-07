@@ -29,6 +29,35 @@ RegisterNetEvent('drp_policemenus:noRoom')
 AddEventHandler('drp_policemenus:noRoom', function()
     notify("Not inventory space!")
 end)
+
+function notify(text)
+    SetNotificationTextEntry("STRING")
+    AddTextComponentString(text)
+    DrawNotification(false, false)
+end
+
+function giveWeapon(hash)
+    GiveWeaponToPed(GetPlayerPed(-1), GetHashKey(hash), 500, false, false)
+end
+
+function Draw3DText(x, y, z, text, scale)
+    local onScreen, _x, _y = World3dToScreen2d(x, y, z)
+    local pX, pY, pZ = table.unpack(GetGameplayCamCoords())
+
+    SetTextScale(scale, scale)
+    SetTextFont(4)
+    SetTextProportional(1)
+    SetTextEntry("STRING")
+    SetTextCentre(true)
+    SetTextColour(255, 255, 255, 215)
+    AddTextComponentString(text)
+    
+    DrawText(_x, _y)
+
+    local factor = (string.len(text)) / 700
+    DrawRect(_x, _y + 0.0150, 0.06 + factor, 0.03, 41, 11, 41, 100)
+end
+
 _menuPool = NativeUI.CreatePool()
 bcsoarmoryMenu = NativeUI.CreateMenu("Armory", "~b~Blaine County Sheriff's Office")
 _menuPool:Add(bcsoarmoryMenu)
@@ -62,25 +91,25 @@ function armoryItems(menu)
     menu:AddItem(sniper)
     menu.OnItemSelect = function(sender, item, index)
         if item == taser then
-            TriggerServerEvent("drp_policemenus:selectItem", "WEAPON_STUNGUN", 1)
+            giveWeapon("WEAPON_STUNGUN")
         elseif item == nightstick then
-            TriggerServerEvent("drp_policemenus:selectItem", "WEAPON_NIGHTSTICK", 1)
+            giveWeapon("WEAPON_NIGHTSTICK")
         elseif item == flashlight then
-            TriggerServerEvent("drp_policemenus:selectItem", "WEAPON_FLASHLIGHT", 1)
+            giveWeapon("WEAPON_FLASHLIGHT")
         elseif item == pistol then
-            TriggerServerEvent("drp_policemenus:selectItem", "WEAPON_PISTOL", 200)
+            giveWeapon("WEAPON_PISTOL")
         elseif item == combatpistol then
-            TriggerServerEvent("drp_policemenus:selectItem", "WEAPON_COMBATPISTOL", 200)
+            giveWeapon("WEAPON_COMBATPISTOL")
         elseif item == mk2pistol then
-            TriggerServerEvent("drp_policemenus:selectItem", "WEAPON_PISTOL_MK2", 200)
+            giveWeapon("WEAPON_PISTOL_MK2")
         elseif item == ar then
-            TriggerServerEvent("drp_policemenus:selectItem", "WEAPON_CARBINERIFLE_MK2", 250)
+            giveWeapon("WEAPON_CARBINERIFLE_MK2")
         elseif item == smg then
-            TriggerServerEvent("drp_policemenus:selectItem", "WEAPON_SMG_MK2", 250)
+            giveWeapon("WEAPON_CARBINERIFLE_MK2")
         elseif item == shotgun then
-            TriggerServerEvent("drp_policemenus:selectItem", "WEAPON_PUMPSHOTGUN_MK2", 100)
+            giveWeapon("WEAPON_PUMPSHOTGUN_MK2")
         elseif item == sniper then
-            TriggerServerEvent("drp_policemenus:selectItem", "WEAPON_SNIPERRIFLE", 50)
+            giveWeapon("WEAPON_SNIPERRIFLE")
         end
     end
 end
@@ -101,48 +130,84 @@ function spawnVehicle(vehicle) --with player in it
     TaskWarpPedIntoVehicle(ped, vehicle, -1)
 end
 
-function vehicleItems
-    local ped = GetPlayerPed(-1)
-    local coords = GetEntityCoords(ped)
-    coords = coords + 
+function vehicleItems(menu)
     local cvpi = NativeUI.CreateItem("CVPI", "Spawn CVPI?")
+    local taurus = NativeUI.CreateItem("Taurus", "Spawn Taurus?")
     local charger = NativeUI.CreateItem("Charger", "Spawn Charger?")
-    local tau = NativeUI.CreateItem("Taurus", "Spawn Taurus?")
-    local exp = NativeUI.CreateItem("Explorer", "Spawn Explorer?")
-    local tahoe = NativeUI.CreateItem("Tahoe", "Spawn Tahoe?")
-    local van = NativeUI.CreateItem("Tahoe", "Spawn SWAT van?")
     menu:AddItem(cvpi)
+    menu:AddItem(taurus)
     menu:AddItem(charger)
-    menu:AddItem(tau)
-    menu:AddItem(exp)
-    menu:AddItem(tahoe)
-    menu:AddItem(van)
     menu.OnItemSelect = function(sender, item, index)
         if item == cvpi then
             spawnVehicle(police)
-        elseif item == charger then
+        elseif item == taurus then
             spawnVehicle(police2)
-        elseif item == tau then
+        elseif item == charger then
             spawnVehicle(police3)
-        elseif item == exp then
-            spawnVehicle(fbi)
-        elseif item == tahoe then
-            spawnVehicle(fbi2)
-        elseif item == van then 
-            spawnVehicle(riot)
+        end
+    end
+end
+
+function mainItems(menu)
+    local lockerRoom =  _menuPool:AddSubMenu(menu, "Clothing")
+    local testItem = NativeUI.CreateItem("Test Item", "Does this work or nah?")
+    local onDuty = NativeUI.CreateItem("Clock on duty", "Are you sure you want to clock on?")
+    local offDuty = NativeUI.CreateItem("Clock off duty", "Are you sure you want to clock off?")
+    submenu:AddItem(testItem)
+    menu:AddItem(onDuty)
+    menu:AddItem(offDuty)
+    testItem.Activated = function(sender, item, index)
+        print('works')
+    end
+    menu.OnItemSelect = function(sender, item, index)
+        if item == onDuty then
+            --Need to create a check to see if the player is registered for police in the database
         end
     end
 end
 
 armoryItems(bcsoarmoryMenu)
 armoryItems(sasparmoryMenu)
-vehicleItems(bcsoarmoryMenu)
-vehicleItems(sasparmoryMenu)
+vehicleItems(bcsogarageMenu)
+vehicleItems(saspgarageMenu)
 _menuPool:RefreshIndex()
+
+--Menu locations
+
+local prisonARM = vector3(1847, 2599, 45)
+local mrpdARM = vector3(0, 0, 0) --put ACTUAL mrpd coords
 
 Citizen.CreateThread(function()
     while true do
         Citizen.Wait(0)
         _menuPool:ProcessMenus()
+        local ply = PlayerPedId()
+        local coords = GetEntityCoords(ply)
+        local player = PlayerId()
+        if #(prisonARM - coords) < 15 then
+            Draw3DText(prisonARM.x, prisonARM.y, prisonARM.z, "[E] - Armory", 0.4)
+            if #(prisonARM - coords) < 7 and IsControlJustReleased(0, 38) then
+                if PlayerData.job == 'sasp' then
+                    sasparmoryMenu:Visible(not sasparmoryMenu:Visible())
+                elseif PlayerData.job == 'bcso' then
+                    bcsoarmoryMenu:Visible(not bcsoarmoryMenu:Visible())
+                else
+                    notify('Not on duty!')
+                end
+            end
+        end
+
+        if #(mrpdARM - coords) < 5 then
+            Draw3DText(mrpdARM.x, mrpdARM.y, mrpdARM.z, "[E] - Armory", 0.4)
+            if IsControlJustReleased(0, 38) then
+                if PlayerData.job == 'sasp' then
+                    sasparmoryMenu:Visible(not sasparmoryMenu:Visible())
+                elseif PlayerData.job == 'bcso' then
+                    bcsoarmoryMenu:Visible(not bcsoarmoryMenu:Visible())
+                else
+                    notify('Not on duty!')
+                end
+            end
+        end
     end
 end)

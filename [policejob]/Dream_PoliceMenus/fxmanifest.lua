@@ -10,7 +10,6 @@ version '0.5'
 client_scripts {
     '@NativeUI/NativeUI.lua',
     'client.lua',
-    'locations.lua'
 }
 
 server_scripts {
