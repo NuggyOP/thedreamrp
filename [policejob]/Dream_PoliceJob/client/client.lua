@@ -124,9 +124,70 @@ Citizen.CreateThread(function()
 	end
 end)
 
+if IsControlJustReleased(0, 36) then
+	if IsControlJustReleased(0, 58) then
+		DisableControlAction(0, 58, true)
+
+		local closestPlayer = ESX.Game.GetClosestPlayer()
+		TriggerServerEvent('drp_policejob:drag', GetPlayerServerId(closestPlayer))
+
+		DisableControlAction(0, 58, false)
+	end
+end
+
+RegisterNetEvent("drp_policejob:drag")
+
+AddEventHandler("drp_policejob:drag", function(id)
+	local closestPlayer = ESX.Game.GetClosestPlayer()
+	dragStatus = {}
+
+	dragStatus.isDragged = not dragStatus.isDragged
+	dragStatus.Id = id
+end)
+
+RegisterNetEvent('drp_policejob:cuff')
+AddEventHandler('esx_policejob:cuff', function()
+	isCuffed = not isCuffed
+	local ped = PlayerPedId
+
+	if isCuffed then
+		RequestAnimDict('mp_arresting')
+		while not HasAnimDictLoaded('mp_arresting') do
+			Citizen.Wait(100)
+		end
+
+		TaskPlayAnim(playerPed, 'mp_arresting', 'idle', 8.0, -8, -1, 49, 0, 0, 0, 0)
+
+		SetEnableHandcuffs(playerPed, true)
+		DisablePlayerFiring(playerPed, true)
+		SetCurrentPedWeapon(playerPed, GetHashKey('WEAPON_UNARMED'), true) -- unarm player
+		SetPedCanPlayGestureAnims(playerPed, false)
+	else
+		ClearPedSecondaryTask(playerPed)
+		SetEnableHandcuffs(playerPed, false)
+		DisablePlayerFiring(playerPed, false)
+		SetPedCanPlayGestureAnims(playerPed, true)
+	end
+end)
+
 Citizen.CreateThread(function()
+	local dragged
+
 	while true do
 		Citizen.Wait(0)
+			if IsControlJustReleased(0, 36) then
+				if IsControlJustReleased(0, 58) then --drag
+					DisableControlAction(0, 58, true)
+		
+					local closestPlayer = ESX.Game.GetClosestPlayer()
+					TriggerServerEvent('drp_policejob:drag', GetPlayerServerId(closestPlayer))
+		
+					DisableControlAction(0, 58, false)
+				elseif IsControlJustReleased(0, 38) then --cuff/uncuff
+					TriggerServerEvent('drp_policejob:cuff', GetPlayerServerId(closestPlayer))
+				end
+			end
+
 			if blocked then
 				DisableControlAction(1, 25, true )
 				DisableControlAction(1, 140, true)
@@ -136,6 +197,31 @@ Citizen.CreateThread(function()
 				DisableControlAction(1, 37, true) -- Disables INPUT_SELECT_WEAPON (TAB)
 				DisablePlayerFiring(ped, true) -- Disable weapon firing
 			end
+
+			local ped = PlayerPedId()
+
+			if dragStatus.isDragged then
+				local targetPed = GetPlayerPed(GetPlayerFromServerId(dragStatus.Id))
+
+				if DoesEntityExist(targetPed) and IsPedOnFoot(targetPed) then
+					if not dragged then
+						AttachEntityToEntity(ped, targetPed, 11816, 0.54, 0.54, 0.0, 0.0, 0.0, 0.0, false, false, false, false, 2, true)
+						dragged = true
+					else
+						Citizen.Wait(1000)
+					end
+				else
+					dragged = false
+					dragStatus.isDragged = false
+					DetachEntity(ped, true, false)
+				end
+			elseif dragged then
+				dragged = false
+				DetachEntity(ped, true, false)
+			else
+				Citizen.Wait(500)
+			end
+		end
 	end
 end)
 
